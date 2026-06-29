@@ -69,12 +69,7 @@ async function matchesCommand(text, commandKey) {
     return text.toLowerCase().includes(keyword.toLowerCase());
 }
 
-async function isRepeatOrderMessage(text) {
-    const config = await getConfig();
-    const keywords = config.repeatKeywords || [];
-    const lowerText = text.toLowerCase();
-    return keywords.some(kw => lowerText.includes(kw.toLowerCase()));
-}
+
 
 // পেন্ডিং স্টেট
 const pendingSheetLink = new Map();
