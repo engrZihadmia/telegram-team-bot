@@ -382,3 +382,24 @@ async function startBot() {
 }
 
 startBot();
+
+// ========== Render-এর জন্য ডামি HTTP সার্ভার (পোর্ট স্ক্যানের জন্য) ==========
+import http from 'http';
+
+const PORT = process.env.PORT || 3000;
+const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('✅ Bot is running!');
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Dummy HTTP server running on port ${PORT}`);
+});
+
+// সার্ভার বন্ধ না হওয়া পর্যন্ত অপেক্ষা
+process.on('SIGTERM', () => {
+    server.close(() => {
+        console.log('✅ Server closed');
+        process.exit(0);
+    });
+});
