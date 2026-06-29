@@ -1,79 +1,116 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { TelegramClient } from 'telegram';
+import { google } from 'googleapis';
 import { StringSession } from 'telegram/sessions/index.js';
+import { TelegramClient } from 'telegram';
 import input from 'input';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const SESSION_SHEET_ID = process.env.SESSION_SHEET_ID;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-const SESSIONS_DIR = path.join(__dirname, 'sessions');
-
-// সেশন ফোল্ডার তৈরি
-if (!fs.existsSync(SESSIONS_DIR)) {
-    fs.mkdirSync(SESSIONS_DIR, { recursive: true });
-}
-
-// ইউজারের সেশন লোড করা
-export function loadUserSession(userId) {
-    const sessionPath = path.join(SESSIONS_DIR, `${userId}.session`);
-    if (fs.existsSync(sessionPath)) {
-        const sessionString = fs.readFileSync(sessionPath, 'utf-8').trim();
-        return new StringSession(sessionString);
-    }
-    return null;
-}
-
-// ইউজারের সেশন সেভ করা
-export function saveUserSession(userId, sessionString) {
-    const sessionPath = path.join(SESSIONS_DIR, `${userId}.session`);
-    fs.writeFileSync(sessionPath, sessionString, 'utf-8');
-}
-
-// ইউজারের জন্য ক্লায়েন্ট তৈরি করা (সেশন থাকলে)
-export async function getUserClient(userId, apiId, apiHash) {
-    const session = loadUserSession(userId);
-    if (!session) {
+// ---------- Google Sheets-এ সেশন রিড ----------
+async function loadSessionFromSheet(userId) {
+    try {
+        const sheets = google.sheets({ version: 'v4', auth: GOOGLE_API_KEY });
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId: SESSION_SHEET_ID,
+            range: 'Sheet1!A:D' // UserId, SessionString, CreatedAt, LastUsed
+        });
+        const rows = response.data.values || [];
+        for (let i = 1; i < rows.length; i++) {
+            const [storedUserId, sessionString] = rows[i];
+            if (storedUserId === userId && sessionString) {
+                return new StringSession(sessionString);
+            }
+        }
+        return null;
+    } catch (err) {
+        console.error('❌ Session load error:', err.message);
         return null;
     }
-    const client = new TelegramClient(session, apiId, apiHash, {
-        connectionRetries: 5
-    });
+}
+
+// ---------- Google Sheets-এ সেশন সেভ ----------
+async function saveSessionToSheet(userId, sessionString) {
+    try {
+        const sheets = google.sheets({ version: 'v4', auth: GOOGLE_API_KEY });
+        
+        // আগের ডেটা মুছে নতুন যোগ করব
+        const existing = await sheets.spreadsheets.values.get({
+            spreadsheetId: SESSION_SHEET_ID,
+            range: 'Sheet1!A:A'
+        });
+        const rows = existing.data.values || [];
+        let rowIndex = -1;
+        for (let i = 1; i < rows.length; i++) {
+            if (rows[i]?.[0] === userId) {
+                rowIndex = i + 1; // 1-বেসড ইনডেক্স
+                break;
+            }
+        }
+
+        const now = new Date().toISOString();
+        if (rowIndex > 0) {
+            // আপডেট
+            await sheets.spreadsheets.values.update({
+                spreadsheetId: SESSION_SHEET_ID,
+                range: `Sheet1!B${rowIndex}:D${rowIndex}`,
+                valueInputOption: 'RAW',
+                requestBody: {
+                    values: [[sessionString, now, now]]
+                }
+            });
+        } else {
+            // নতুন যোগ
+            const newRow = [[userId, sessionString, now, now]];
+            await sheets.spreadsheets.values.append({
+                spreadsheetId: SESSION_SHEET_ID,
+                range: 'Sheet1!A:D',
+                valueInputOption: 'RAW',
+                requestBody: { values: newRow }
+            });
+        }
+        console.log('✅ Session saved to Google Sheets');
+    } catch (err) {
+        console.error('❌ Session save error:', err.message);
+    }
+}
+
+// ---------- ইউজার ক্লায়েন্ট তৈরি ----------
+export async function getUserClient(userId, apiId, apiHash) {
+    const session = await loadSessionFromSheet(userId);
+    if (!session) return null;
+    const client = new TelegramClient(session, apiId, apiHash, { connectionRetries: 5 });
     await client.connect();
     return client;
 }
 
-// নতুন ইউজার লগইন করানো (প্রথমবার বা সেশন নেই)
+// ---------- নতুন ইউজার লগইন ----------
 export async function loginUser(userId, apiId, apiHash) {
     const session = new StringSession('');
-    const client = new TelegramClient(session, apiId, apiHash, {
-        connectionRetries: 5
-    });
+    const client = new TelegramClient(session, apiId, apiHash, { connectionRetries: 5 });
 
     console.log(`📱 User ${userId} login starting...`);
     
     await client.start({
         phoneNumber: async () => {
-            console.log('📞 Enter your phone number (with country code, e.g., +880...):');
+            console.log('📞 Enter phone number (e.g., +880...):');
             return await input.text('Phone: ');
         },
         password: async () => {
-            console.log('🔑 Enter your 2FA password (if any, else press Enter):');
+            console.log('🔑 Enter 2FA password (if any):');
             return await input.text('Password: ');
         },
         phoneCode: async () => {
-            console.log('📨 Enter the code sent to your Telegram:');
+            console.log('📨 Enter the code sent to Telegram:');
             return await input.text('Code: ');
         },
         onError: (err) => console.error('Login error:', err)
     });
 
     console.log('✅ Login successful!');
-    
-    // সেশন সেভ করা
     const sessionString = client.session.save();
-    saveUserSession(userId, sessionString);
+    await saveSessionToSheet(userId, sessionString);
     
     return client;
 }
+
+export { loadSessionFromSheet, saveSessionToSheet };
