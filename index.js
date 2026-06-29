@@ -15,7 +15,7 @@ import {
 } from "./messageProcessor.js";
 import { logAction, logError } from "./logger.js";
 import { extractSheetId, getSheetTitle, parseTitle } from "./sheetReader.js";
-import { loadConfigFromSheet } from "./configLoader.js";
+
 
 dotenv.config();
 
