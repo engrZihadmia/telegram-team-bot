@@ -87,10 +87,10 @@ export async function addFiverrKeyword(keyword) {
 }
 
 export async function isRepeatOrderMessage(text) {
-    const config = await getConfigData();
-    if (!config) return false;
+    const config = await getConfig();
+    const keywords = config.repeatKeywords || [];
     const lowerText = text.toLowerCase();
-    return (config.repeat_order_keywords || []).some(kw => lowerText.includes(kw.toLowerCase()));
+    return keywords.some(kw => lowerText.includes(kw.toLowerCase()));
 }
 
 export async function addRepeatOrderKeyword(keyword) {

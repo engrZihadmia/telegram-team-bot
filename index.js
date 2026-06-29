@@ -90,13 +90,6 @@ async function getBotUsername() {
     return config.botUsername || 'your_bot_username_here';
 }
 
-// ---------- রিপিট অর্ডার চেক ----------
-async function isRepeatOrderMessage(text) {
-    const config = await getConfig();
-    const keywords = config.repeatKeywords || [];
-    const lowerText = text.toLowerCase();
-    return keywords.some(kw => lowerText.includes(kw.toLowerCase()));
-}
 
 // ---------- ফাইভার কীওয়ার্ড মাস্ক ----------
 function maskFiverrKeywords(text) {
