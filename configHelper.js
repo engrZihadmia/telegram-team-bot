@@ -13,7 +13,7 @@ let configCache = null;
 let lastLoadTime = 0;
 const CACHE_TTL = 60000; // ১ মিনিট
 
-async function loadConfig() {
+export async function loadConfig() {
     if (!CONFIG_SHEET_ID) {
         console.warn('⚠️ CONFIG_SHEET_ID সেট নেই, লোকাল config.json ব্যবহার করা হচ্ছে...');
         return JSON.parse(fs.readFileSync(path.join(__dirname, "config", "config.json"), "utf-8"));
