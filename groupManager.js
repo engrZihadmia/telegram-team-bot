@@ -12,7 +12,17 @@ function buildGroupTitle({ clientName, profileName, orderId, service }) {
     return `${clientName} || ${profileName} || ${orderId} || ${service}`;
 }
 
+// 🔧 ফাংশন আপডেট – username চেক
 async function resolveUserSafe(client, username) {
+    // যদি username স্ট্রিং না হয়, তাহলে error রিটার্ন
+    if (!username || typeof username !== 'string') {
+        return {
+            success: false,
+            username: String(username || 'unknown'),
+            errorCode: 'INVALID_USERNAME',
+            errorMessage: 'Username is not a valid string'
+        };
+    }
     const cleanUsername = username.replace("@", "");
     try {
         const entity = await client.getEntity(cleanUsername);
@@ -50,29 +60,44 @@ async function createGroupWithMembers(commandingClient, parsedInput, teamMembers
 
     const usernamesToAdd = [];
 
-    // common members
+    // ১. কমন মেম্বার (শুধু ভ্যালিড স্ট্রিং)
     for (const uname of commonMembers) {
-        if (uname && uname.trim()) usernamesToAdd.push(uname.trim());
+        if (uname && typeof uname === 'string' && uname.trim()) {
+            usernamesToAdd.push(uname.trim());
+        }
     }
 
-    // bot
-    if (botUsername && botUsername !== "your_bot_username_here") {
-        usernamesToAdd.push(botUsername);
+    // ২. বট (শুধু ভ্যালিড)
+    if (botUsername && typeof botUsername === 'string' && botUsername !== 'your_bot_username_here' && botUsername.trim()) {
+        usernamesToAdd.push(botUsername.trim());
     }
 
-    // team leader/coleader
+    // ৩. টিম লিডার/কো-লিডার
     if (teamMembers) {
-        if (teamMembers.leader) usernamesToAdd.push(teamMembers.leader);
-        if (teamMembers.coleader) usernamesToAdd.push(teamMembers.coleader);
+        if (teamMembers.leader && typeof teamMembers.leader === 'string' && teamMembers.leader.trim()) {
+            usernamesToAdd.push(teamMembers.leader.trim());
+        }
+        if (teamMembers.coleader && typeof teamMembers.coleader === 'string' && teamMembers.coleader.trim()) {
+            usernamesToAdd.push(teamMembers.coleader.trim());
+        }
     }
 
-    // profile sales & owner
-    if (mapping && mapping.salesMember) usernamesToAdd.push(mapping.salesMember);
-    if (mapping && mapping.owner) usernamesToAdd.push(mapping.owner);
+    // ৪. প্রোফাইল থেকে সেলস মেম্বার ও ওনার
+    if (mapping) {
+        if (mapping.salesMember && typeof mapping.salesMember === 'string' && mapping.salesMember.trim()) {
+            usernamesToAdd.push(mapping.salesMember.trim());
+        }
+        if (mapping.owner && typeof mapping.owner === 'string' && mapping.owner.trim()) {
+            usernamesToAdd.push(mapping.owner.trim());
+        }
+    }
 
-    // resolve all
+    // ডুপ্লিকেট রিমুভ
+    const uniqueUsernames = [...new Set(usernamesToAdd)];
+
+    // রেজলভ
     const resolvedUsers = [];
-    for (const uname of usernamesToAdd) {
+    for (const uname of uniqueUsernames) {
         const result = await resolveUserSafe(commandingClient, uname);
         if (result.success) {
             resolvedUsers.push(result);
@@ -89,7 +114,7 @@ async function createGroupWithMembers(commandingClient, parsedInput, teamMembers
         throw new Error("কোনো ইউজার রেজলভ করা যায়নি – গ্রুপ তৈরি বন্ধ।");
     }
 
-    // create group
+    // গ্রুপ তৈরি
     let createResult;
     try {
         createResult = await commandingClient.invoke(
@@ -112,8 +137,8 @@ async function createGroupWithMembers(commandingClient, parsedInput, teamMembers
     report.chatId = chatId;
     report.added = resolvedUsers.map(r => r.username);
 
-    // ---------- বটকে অ্যাডমিন বানানো ----------
-    if (chatId && botUsername && botUsername !== "your_bot_username_here") {
+    // বটকে অ্যাডমিন বানানো
+    if (chatId && botUsername && typeof botUsername === 'string' && botUsername !== 'your_bot_username_here') {
         const botResult = await resolveUserSafe(commandingClient, botUsername);
         if (botResult.success) {
             try {
