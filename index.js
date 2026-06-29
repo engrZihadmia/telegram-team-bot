@@ -3,7 +3,7 @@ import { loadConfigFromSheet } from "./configFromSheet.js";
 import { StringSession } from "telegram/sessions/index.js";
 import { NewMessage } from "telegram/events/index.js";
 import dotenv from "dotenv";
-import { loadUserSession, saveUserSession, getUserClient, loginUser } from "./sessionManager.js";
+import { saveUserSession, getUserClient, loginUser } from "./sessionManager.js";
 import { parseGroupInput, createGroupWithMembers } from "./groupManager.js";
 import { isRepeatOrderMessage, recordGroup, findGroupByClientName, updateOrderId } from "./repeatOrderManager.js";
 import {
