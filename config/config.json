@@ -1,0 +1,68 @@
+{
+  "profiles": {
+    "explor-web": {
+      "sales_member": "mahbubalam05",
+      "owner": "fsayezur_rahman_sunny"
+    },
+    "mernsquad": {
+      "sales_member": "NextCrafter",
+      "owner": null
+    }
+  },
+
+  "teams": {
+    "wh": {
+      "leader": "kayum",
+      "coleader": "raza"
+    },
+    "ws": {
+      "leader": "bijoy",
+      "coleader": "sadik"
+    },
+    "wc": {
+      "leader": "sabbir",
+      "coleader": "hasan"
+    },
+    "sb": {
+      "leader": "sBayzedAhmed",
+      "coleader": "stheanikislam1"
+    }
+  },
+
+  "common_members": [
+    
+    "ManagerCommon"
+  ],
+
+  "mention_overrides": {
+    "jannat-wix": "apu"
+  },
+
+  "default_mention_word": "vai",
+
+  "fiverr_keywords": [
+    "payment", "paypal", "whatsapp", "gmail", "telegram", "skype",
+    "phone", "email", "outside", "offline", "personal", "contact",
+    "number", "discount", "cheap", "free"
+  ],
+
+  "repeat_order_keywords": [
+    "repeat_order", "repaad", "repeat", "again_order"
+  ],
+
+  "command_keywords": {
+    "message": "_msg",
+    "delivery": "_delivery",
+    "first_update": "_first_update",
+    "doc": "_doc",
+    "attach_doc": "_attach_doc",
+    "inbox": "_inbox",
+    "stop_mention": "_stop_mention"
+  },
+
+  "bot_username": "worksForTeam_bot",
+
+  "admins": [
+    "5595948603"
+  ]
+}

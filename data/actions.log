@@ -1,0 +1,66 @@
+[2026-06-27T12:29:47.952Z] [ERROR] context=main_handler message=ENOENT: no such file or directory, open 'C:\Users\Zihad\Desktop\teamBot\config\config.json'
+[2026-06-27T12:38:35.588Z] [ERROR] context=main_handler message=Could not find the input entity for {"userId":"5969442266","className":"PeerUser"}.
+         Please read https://docs.telethon.dev/en/stable/concepts/entities.html to find out more details.
+[2026-06-27T12:38:50.424Z] [ERROR] context=main_handler message=Could not find the input entity for {"userId":"5969442266","className":"PeerUser"}.
+         Please read https://docs.telethon.dev/en/stable/concepts/entities.html to find out more details.
+[2026-06-27T12:39:48.997Z] [ERROR] context=main_handler message=The message cannot be empty unless a file is provided
+[2026-06-27T12:40:03.285Z] [ERROR] context=main_handler message=The message cannot be empty unless a file is provided
+[2026-06-27T12:40:25.740Z] [ERROR] context=main_handler message=The message cannot be empty unless a file is provided
+[2026-06-27T12:45:23.457Z] [ACTION] user=5595948603 action=start_command 
+[2026-06-27T12:46:00.948Z] [ERROR] context=fetchSheetRows message=Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.
+[2026-06-27T12:54:22.510Z] [ERROR] context=main_handler message=Could not find the input entity for {"userId":"8106401990","className":"PeerUser"}.
+         Please read https://docs.telethon.dev/en/stable/concepts/entities.html to find out more details.
+[2026-06-27T12:55:50.129Z] [ACTION] user=5595948603 action=start_command 
+[2026-06-27T12:55:58.380Z] [ERROR] context=sheet_title_processing message=Kono username resolve kora gelo na (bot soho). Group create kora hocche na. Commanding account ta target username gulor sathe age kokhono message/contact exchange koreche kina check koro — GramJS na thakle cache theke resolve korte pare na.
+[2026-06-27T12:57:05.789Z] [ACTION] user=5595948603 action=start_command 
+[2026-06-27T12:57:11.963Z] [ERROR] context=sheet_title_processing message=Kono username resolve kora gelo na (bot soho). Group create kora hocche na. Commanding account ta target username gulor sathe age kokhono message/contact exchange koreche kina check koro — GramJS na thakle cache theke resolve korte pare na.
+[2026-06-27T12:58:23.032Z] [ACTION] user=5595948603 action=start_command 
+[2026-06-27T12:58:29.433Z] [ACTION] user=5595948603 action=sheet_group_created mytest || mernsquad || FO730C57B1E47 || Squarespace
+[2026-06-28T10:51:34.046Z] [ACTION] user=5595948603 action=start_command 
+[2026-06-28T10:52:24.304Z] [ACTION] user=5595948603 action=start_command 
+[2026-06-28T10:52:29.795Z] [ACTION] user=5595948603 action=sheet_group_created omytest || mernsquad || FO730C57B1E47 || Squarespace
+[2026-06-28T11:19:00.463Z] [ACTION] user=5595948603 action=start_command sb
+[2026-06-28T11:19:32.855Z] [ACTION] user=5595948603 action=start_command sb
+[2026-06-28T11:19:37.481Z] [ACTION] user=5595948603 action=sheet_group_created orepagla || explor-web || FO730C57B1E47 || Squarespace
+[2026-06-28T11:26:57.327Z] [ACTION] user=5595948603 action=start_command sb
+[2026-06-28T11:27:04.667Z] [ACTION] user=5595948603 action=sheet_group_created newone || explor-web || FO730C57B1E47 || Squarespace
+[2026-06-28T11:38:43.336Z] [ACTION] user=5595948603 action=start_command sb
+[2026-06-28T11:39:02.461Z] [ACTION] user=5595948603 action=sheet_group_created lastone || explor-web || FO730C57B1E47 || Squarespace
+[2026-06-28T11:47:16.196Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T11:56:50.470Z] [ACTION] user=7259264823 action=msg_command explor-web
+[2026-06-28T11:57:52.561Z] [ACTION] user=7259264823 action=msg_command explor-web
+[2026-06-28T12:02:27.268Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T12:12:26.077Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T12:12:46.837Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T12:15:36.563Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T12:18:03.055Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T12:24:47.870Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T12:29:38.699Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T12:30:17.904Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T12:31:44.512Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T12:33:41.734Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T13:08:22.182Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T13:11:47.901Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-28T13:12:16.735Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T02:42:11.473Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T04:39:38.148Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T04:48:27.275Z] [ERROR] context=bot_handler message=result.replace is not a function
+[2026-06-29T04:50:40.665Z] [ERROR] context=bot_handler message=result.replace is not a function
+[2026-06-29T05:00:00.739Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:00:25.187Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:04:39.150Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:05:12.259Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:07:16.655Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:07:44.193Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:15:21.855Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:45:17.155Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:48:06.785Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:49:36.635Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:50:59.426Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:53:19.334Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:53:32.928Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T05:56:50.796Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T06:01:56.492Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T06:06:25.839Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T06:06:43.050Z] [ACTION] user=5595948603 action=msg_command explor-web
+[2026-06-29T06:08:53.151Z] [ACTION] user=7259264823 action=msg_command explor-web
