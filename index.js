@@ -3,7 +3,7 @@ import { loadConfigFromSheet } from "./configFromSheet.js";
 import { StringSession } from "telegram/sessions/index.js";
 import { NewMessage } from "telegram/events/index.js";
 import dotenv from "dotenv";
-import { saveUserSession, getUserClient, loginUser } from "./sessionManager.js";
+import { getUserClient, loginUser } from "./sessionManager.js";
 import { parseGroupInput, createGroupWithMembers } from "./groupManager.js";
 import { isRepeatOrderMessage, recordGroup, findGroupByClientName, updateOrderId } from "./repeatOrderManager.js";
 import {
@@ -16,22 +16,20 @@ import {
 import { logAction, logError } from "./logger.js";
 import { extractSheetId, getSheetTitle, parseTitle } from "./sheetReader.js";
 
-
 dotenv.config();
 
 const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
 const botToken = process.env.BOT_TOKEN;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const CONFIG_SHEET_ID = process.env.CONFIG_SHEET_ID; // নতুন env ভেরিয়েবল
+const CONFIG_SHEET_ID = process.env.CONFIG_SHEET_ID;
 
 // কনফিগ ক্যাশে
 let cachedConfig = null;
 let configLastLoaded = 0;
 const CONFIG_CACHE_TTL = 300000; // 5 মিনিট
 
-// ---------- কনফিগ লোড ফাংশন ----------
-// কনফিগ লোড ফাংশন
+// ---------- কনফিগ লোড ----------
 async function getConfig() {
     const now = Date.now();
     if (cachedConfig && (now - configLastLoaded) < CONFIG_CACHE_TTL) {
@@ -69,7 +67,6 @@ async function getConfig() {
     }
 }
 
-
 // ---------- অ্যাডমিন চেক ----------
 async function isAdmin(userId) {
     const config = await getConfig();
@@ -90,22 +87,24 @@ async function getBotUsername() {
     return config.botUsername || 'your_bot_username_here';
 }
 
-
 // ---------- ফাইভার কীওয়ার্ড মাস্ক ----------
 function maskFiverrKeywords(text) {
     // configHelper-এর maskFiverrKeywords ব্যবহার করবেন
-    return text; // আসল ফাংশন configHelper থেকে ইম্পোর্ট করে নিন
+    return text;
 }
 
 // ---------- মেইন বট ----------
 const pendingSheetLink = new Map();
 const pendingRepeatOrder = new Map();
+const pendingLogin = new Map(); // userId -> { step: 'awaiting_phone' | 'awaiting_code', phone? }
 
 async function startBot() {
+    // বট ক্লায়েন্ট
     const botClient = new TelegramClient(new StringSession(""), apiId, apiHash, { connectionRetries: 5 });
     await botClient.start({ botAuthToken: botToken });
     console.log("✅ বট ক্লায়েন্ট সংযুক্ত");
 
+    // ইউজার ক্লায়েন্ট ক্যাশে
     const userClients = new Map();
 
     async function getUserClientSafe(userId) {
@@ -133,7 +132,37 @@ async function startBot() {
 
         try {
             // ==========================================
-            // ১. /start কমান্ড (শুধু অ্যাডমিনরা?)
+            // ১. লগইন প্রক্রিয়া (ফোন নম্বর ও কোড)
+            // ==========================================
+            if (chatId === senderId && pendingLogin.has(senderId)) {
+                const state = pendingLogin.get(senderId);
+                if (state.step === 'awaiting_phone') {
+                    const phone = text.trim();
+                    if (!/^\+?\d{10,15}$/.test(phone)) {
+                        await botClient.sendMessage(senderId, { message: "❌ সঠিক ফোন নম্বর দিন (যেমন: +8801712345678):" });
+                        return;
+                    }
+                    pendingLogin.set(senderId, { step: 'awaiting_code', phone });
+                    await botClient.sendMessage(senderId, { message: "📨 টেলিগ্রাম থেকে পাঠানো লগইন কোড দিন:" });
+                    return;
+                }
+                if (state.step === 'awaiting_code') {
+                    const code = text.trim();
+                    try {
+                        const client = await loginUser(senderId, apiId, apiHash);
+                        userClients.set(senderId, client);
+                        pendingLogin.delete(senderId);
+                        await botClient.sendMessage(senderId, { message: "✅ লগইন সফল! এখন `/start team_name` দিয়ে গ্রুপ তৈরি করতে পারেন।" });
+                    } catch (err) {
+                        await botClient.sendMessage(senderId, { message: `❌ লগইন ব্যর্থ: ${err.message}` });
+                        pendingLogin.delete(senderId);
+                    }
+                    return;
+                }
+            }
+
+            // ==========================================
+            // ২. /start কমান্ড (অ্যাডমিন)
             // ==========================================
             if (chatId === senderId && text.startsWith("/start")) {
                 if (!await isAdmin(senderId)) {
@@ -143,10 +172,10 @@ async function startBot() {
 
                 let userClient = await getUserClientSafe(senderId);
                 if (!userClient) {
+                    pendingLogin.set(senderId, { step: 'awaiting_phone' });
                     await botClient.sendMessage(senderId, {
-                        message: "🔐 প্রথমবার ব্যবহারের জন্য আপনার টেলিগ্রাম অ্যাকাউন্ট লগইন করুন। দয়া করে আপনার ফোন নম্বর পাঠান (যেমন: +8801712345678):"
+                        message: "🔐 প্রথমবার ব্যবহারের জন্য আপনার ফোন নম্বর পাঠান (যেমন: +8801712345678):"
                     });
-                    // লগইন প্রক্রিয়া এখানে হ্যান্ডেল করা উচিত, কিন্তু সংক্ষেপে রাখছি
                     return;
                 }
 
@@ -172,7 +201,7 @@ async function startBot() {
             }
 
             // ==========================================
-            // ২. শীট লিংক রিসিভ
+            // ৩. শীট লিংক রিসিভ
             // ==========================================
             if (pendingSheetLink.has(senderId) && chatId === senderId) {
                 const state = pendingSheetLink.get(senderId);
@@ -260,7 +289,7 @@ async function startBot() {
             }
 
             // ==========================================
-            // ৩. গ্রুপের মেসেজ
+            // ৪. গ্রুপের মেসেজ
             // ==========================================
             if (chatId !== senderId) {
                 console.log(`📌 গ্রুপ মেসেজ: ${text}`);
@@ -383,7 +412,7 @@ async function startBot() {
 
 startBot();
 
-// ========== Render-এর জন্য ডামি HTTP সার্ভার (পোর্ট স্ক্যানের জন্য) ==========
+// ========== Render-এর জন্য ডামি HTTP সার্ভার ==========
 import http from 'http';
 
 const PORT = process.env.PORT || 3000;
@@ -396,7 +425,6 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Dummy HTTP server running on port ${PORT}`);
 });
 
-// সার্ভার বন্ধ না হওয়া পর্যন্ত অপেক্ষা
 process.on('SIGTERM', () => {
     server.close(() => {
         console.log('✅ Server closed');

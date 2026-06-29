@@ -7,7 +7,7 @@ const SESSION_SHEET_ID = process.env.SESSION_SHEET_ID;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 // ---------- Google Sheets-এ সেশন রিড ----------
-async function loadSessionFromSheet(userId) {
+export async function loadSessionFromSheet(userId) {
     try {
         const sheets = google.sheets({ version: 'v4', auth: GOOGLE_API_KEY });
         const response = await sheets.spreadsheets.values.get({
@@ -29,11 +29,11 @@ async function loadSessionFromSheet(userId) {
 }
 
 // ---------- Google Sheets-এ সেশন সেভ ----------
-async function saveSessionToSheet(userId, sessionString) {
+export async function saveSessionToSheet(userId, sessionString) {
     try {
         const sheets = google.sheets({ version: 'v4', auth: GOOGLE_API_KEY });
         
-        // আগের ডেটা মুছে নতুন যোগ করব
+        // আগের ডেটা খুঁজি
         const existing = await sheets.spreadsheets.values.get({
             spreadsheetId: SESSION_SHEET_ID,
             range: 'Sheet1!A:A'
@@ -112,5 +112,3 @@ export async function loginUser(userId, apiId, apiHash) {
     
     return client;
 }
-
-export { loadSessionFromSheet, saveSessionToSheet };
