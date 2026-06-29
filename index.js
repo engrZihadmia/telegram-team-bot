@@ -15,6 +15,7 @@ import {
 } from "./messageProcessor.js";
 import { logAction, logError } from "./logger.js";
 import { extractSheetId, getSheetTitle, parseTitle } from "./sheetReader.js";
+import http from 'http'; // for dummy server
 
 dotenv.config();
 
@@ -24,32 +25,21 @@ const botToken = process.env.BOT_TOKEN;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const CONFIG_SHEET_ID = process.env.CONFIG_SHEET_ID;
 
-// কনফিগ ক্যাশে
 let cachedConfig = null;
 let configLastLoaded = 0;
-const CONFIG_CACHE_TTL = 300000; // 5 মিনিট
+const CONFIG_CACHE_TTL = 300000;
 
 // ---------- কনফিগ লোড ----------
 async function getConfig() {
     const now = Date.now();
-    if (cachedConfig && (now - configLastLoaded) < CONFIG_CACHE_TTL) {
-        return cachedConfig;
-    }
+    if (cachedConfig && (now - configLastLoaded) < CONFIG_CACHE_TTL) return cachedConfig;
     if (!CONFIG_SHEET_ID) {
-        console.warn('⚠️ CONFIG_SHEET_ID সেট নেই, ডিফল্ট কনফিগ ব্যবহার করা হচ্ছে।');
+        console.warn('⚠️ CONFIG_SHEET_ID সেট নেই, ডিফল্ট কনফিগ ব্যবহার।');
         return {
-            profiles: {},
-            teams: {},
-            commonMembers: [],
+            profiles: {}, teams: {}, commonMembers: [],
             fiverrKeywords: ['payment', 'paypal', 'whatsapp'],
             repeatKeywords: ['repeat_order', 'repaad'],
-            commandKeywords: {
-                message: '_msg',
-                delivery: '_delivery',
-                first_update: '_first_update',
-                doc: '_doc',
-                stop_mention: '_stop_mention'
-            },
+            commandKeywords: { message: '_msg', delivery: '_delivery', first_update: '_first_update', doc: '_doc', stop_mention: '_stop_mention' },
             admins: ['5595948603'],
             botUsername: 'your_bot_username_here',
             defaultMentionWord: 'vai',
@@ -67,13 +57,11 @@ async function getConfig() {
     }
 }
 
-// ---------- অ্যাডমিন চেক ----------
 async function isAdmin(userId) {
     const config = await getConfig();
     return (config.admins || []).includes(userId);
 }
 
-// ---------- ম্যাচিং কমান্ড ----------
 async function matchesCommand(text, commandKey) {
     const config = await getConfig();
     const keyword = config.commandKeywords?.[commandKey];
@@ -81,19 +69,14 @@ async function matchesCommand(text, commandKey) {
     return text.toLowerCase().includes(keyword.toLowerCase());
 }
 
-// ---------- বট ইউজারনেম ----------
-async function getBotUsername() {
+async function isRepeatOrderMessage(text) {
     const config = await getConfig();
-    return config.botUsername || 'your_bot_username_here';
+    const keywords = config.repeatKeywords || [];
+    const lowerText = text.toLowerCase();
+    return keywords.some(kw => lowerText.includes(kw.toLowerCase()));
 }
 
-// ---------- ফাইভার কীওয়ার্ড মাস্ক ----------
-function maskFiverrKeywords(text) {
-    // configHelper-এর maskFiverrKeywords ব্যবহার করবেন
-    return text;
-}
-
-// ---------- মেইন বট ----------
+// পেন্ডিং স্টেট
 const pendingSheetLink = new Map();
 const pendingRepeatOrder = new Map();
 const pendingLogin = new Map(); // userId -> { step: 'awaiting_phone' | 'awaiting_code', phone? }
@@ -104,13 +87,10 @@ async function startBot() {
     await botClient.start({ botAuthToken: botToken });
     console.log("✅ বট ক্লায়েন্ট সংযুক্ত");
 
-    // ইউজার ক্লায়েন্ট ক্যাশে
     const userClients = new Map();
 
     async function getUserClientSafe(userId) {
-        if (userClients.has(userId)) {
-            return userClients.get(userId);
-        }
+        if (userClients.has(userId)) return userClients.get(userId);
         const client = await getUserClient(userId, apiId, apiHash);
         if (client) {
             userClients.set(userId, client);
@@ -131,9 +111,7 @@ async function startBot() {
         console.log(`📩 মেসেজ: from=${senderId}, chat=${chatId}, text="${text}"`);
 
         try {
-            // ==========================================
-            // ১. লগইন প্রক্রিয়া (ফোন নম্বর ও কোড)
-            // ==========================================
+            // ================== লগইন প্রক্রিয়া ==================
             if (chatId === senderId && pendingLogin.has(senderId)) {
                 const state = pendingLogin.get(senderId);
                 if (state.step === 'awaiting_phone') {
@@ -148,6 +126,10 @@ async function startBot() {
                 }
                 if (state.step === 'awaiting_code') {
                     const code = text.trim();
+                    if (!code) {
+                        await botClient.sendMessage(senderId, { message: "❌ সঠিক কোড দিন:" });
+                        return;
+                    }
                     try {
                         const client = await loginUser(senderId, apiId, apiHash);
                         userClients.set(senderId, client);
@@ -161,9 +143,7 @@ async function startBot() {
                 }
             }
 
-            // ==========================================
-            // ২. /start কমান্ড (অ্যাডমিন)
-            // ==========================================
+            // ================== /start কমান্ড ==================
             if (chatId === senderId && text.startsWith("/start")) {
                 if (!await isAdmin(senderId)) {
                     await botClient.sendMessage(senderId, { message: "⛔ শুধুমাত্র অ্যাডমিনরা গ্রুপ তৈরি করতে পারেন।" });
@@ -179,11 +159,10 @@ async function startBot() {
                     return;
                 }
 
+                // বাকি /start প্রক্রিয়া
                 const parts = text.split(" ");
                 let teamName = null;
-                if (parts.length > 1) {
-                    teamName = parts[1].trim().toLowerCase();
-                }
+                if (parts.length > 1) teamName = parts[1].trim().toLowerCase();
                 const config = await getConfig();
                 const teams = config.teams || {};
                 if (teamName && !teams[teamName]) {
@@ -200,9 +179,7 @@ async function startBot() {
                 return;
             }
 
-            // ==========================================
-            // ৩. শীট লিংক রিসিভ
-            // ==========================================
+            // ================== শীট লিংক রিসিভ ==================
             if (pendingSheetLink.has(senderId) && chatId === senderId) {
                 const state = pendingSheetLink.get(senderId);
                 if (state.step === 'awaiting_link') {
@@ -239,10 +216,7 @@ async function startBot() {
                         const teams = config.teams || {};
                         let teamMembers = null;
                         if (state.team && teams[state.team]) {
-                            teamMembers = {
-                                leader: teams[state.team].leader,
-                                coleader: teams[state.team].coleader
-                            };
+                            teamMembers = { leader: teams[state.team].leader, coleader: teams[state.team].coleader };
                         }
 
                         await botClient.sendMessage(senderId, { message: "⏳ গ্রুপ তৈরি হচ্ছে..." });
@@ -257,10 +231,7 @@ async function startBot() {
                         const report = await createGroupWithMembers(userClient, parsedInput, teamMembers);
                         recordGroup({
                             chatId: report.chatId,
-                            clientName,
-                            profileName,
-                            orderId,
-                            service,
+                            clientName, profileName, orderId, service,
                             title: report.title
                         });
 
@@ -288,9 +259,7 @@ async function startBot() {
                 }
             }
 
-            // ==========================================
-            // ৪. গ্রুপের মেসেজ
-            // ==========================================
+            // ================== গ্রুপের মেসেজ ==================
             if (chatId !== senderId) {
                 console.log(`📌 গ্রুপ মেসেজ: ${text}`);
 
@@ -324,9 +293,7 @@ async function startBot() {
                     const chat = await botClient.getEntity(chatId);
                     const title = chat.title || "";
                     const parts = title.split("||").map(p => p.trim());
-                    if (parts.length >= 2) {
-                        profileName = parts[1];
-                    }
+                    if (parts.length >= 2) profileName = parts[1];
                     console.log(`🏷️ গ্রুপ টাইটেল: "${title}" -> প্রোফাইল: "${profileName}"`);
                 } catch (err) {
                     console.warn("গ্রুপ টাইটেল পড়া সম্ভব হয়নি:", err.message);
@@ -336,7 +303,6 @@ async function startBot() {
                 const lines = text.split("\n");
                 let firstLine = lines[0]?.trim() || "";
                 let rawMsg = lines.slice(1).join("\n");
-
                 if (lines.length === 1) {
                     const words = firstLine.split(" ");
                     const possibleCmd = words[0];
@@ -358,20 +324,14 @@ async function startBot() {
                     logAction(senderId, "stop_mention", chatId);
                     return;
                 }
-
                 // _msg
                 if (await matchesCommand(firstLine, "message")) {
                     const result = await processGenericMessage(rawMsg, profileName);
-                    if (result.message) {
-                        await botClient.sendMessage(chatId, { message: result.message });
-                    }
-                    if (result.mention) {
-                        await botClient.sendMessage(chatId, { message: result.mention });
-                    }
+                    if (result.message) await botClient.sendMessage(chatId, { message: result.message });
+                    if (result.mention) await botClient.sendMessage(chatId, { message: result.mention });
                     logAction(senderId, "msg_command", profileName);
                     return;
                 }
-
                 // _first_update
                 if (await matchesCommand(firstLine, "first_update")) {
                     const hasDocument = message.media != null;
@@ -380,7 +340,6 @@ async function startBot() {
                     logAction(senderId, "first_update_command", profileName);
                     return;
                 }
-
                 // _doc
                 if (await matchesCommand(firstLine, "doc")) {
                     const processed = await processDocCommand(rawMsg, profileName);
@@ -388,7 +347,6 @@ async function startBot() {
                     logAction(senderId, "doc_command", profileName);
                     return;
                 }
-
                 // _delivery
                 if (await matchesCommand(firstLine, "delivery")) {
                     const hasAttachDoc = text.includes("_attach_doc");
@@ -398,7 +356,6 @@ async function startBot() {
                     logAction(senderId, "delivery_command", profileName);
                     return;
                 }
-
                 console.log("ℹ️ কোনো কমান্ড মেলেনি, মেসেজ ইগনোর করা হলো।");
             }
         } catch (err) {
@@ -410,17 +367,12 @@ async function startBot() {
     console.log("🚀 বট চালু – কনফিগারেশন শীট থেকে সব ডেটা লোড হবে।");
 }
 
-startBot();
-
-// ========== Render-এর জন্য ডামি HTTP সার্ভার ==========
-import http from 'http';
-
+// ডামি HTTP সার্ভার (Render-এর জন্য)
 const PORT = process.env.PORT || 3000;
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('✅ Bot is running!');
 });
-
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Dummy HTTP server running on port ${PORT}`);
 });
@@ -431,3 +383,5 @@ process.on('SIGTERM', () => {
         process.exit(0);
     });
 });
+
+startBot();

@@ -7,12 +7,12 @@ const SESSION_SHEET_ID = process.env.SESSION_SHEET_ID;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 // ---------- Google Sheets-এ সেশন রিড ----------
-export async function loadSessionFromSheet(userId) {
+async function loadSessionFromSheet(userId) {
     try {
         const sheets = google.sheets({ version: 'v4', auth: GOOGLE_API_KEY });
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SESSION_SHEET_ID,
-            range: 'Sheet1!A:D' // UserId, SessionString, CreatedAt, LastUsed
+            range: 'Sheet1!A:D'
         });
         const rows = response.data.values || [];
         for (let i = 1; i < rows.length; i++) {
@@ -29,11 +29,9 @@ export async function loadSessionFromSheet(userId) {
 }
 
 // ---------- Google Sheets-এ সেশন সেভ ----------
-export async function saveSessionToSheet(userId, sessionString) {
+async function saveSessionToSheet(userId, sessionString) {
     try {
         const sheets = google.sheets({ version: 'v4', auth: GOOGLE_API_KEY });
-        
-        // আগের ডেটা খুঁজি
         const existing = await sheets.spreadsheets.values.get({
             spreadsheetId: SESSION_SHEET_ID,
             range: 'Sheet1!A:A'
@@ -42,14 +40,12 @@ export async function saveSessionToSheet(userId, sessionString) {
         let rowIndex = -1;
         for (let i = 1; i < rows.length; i++) {
             if (rows[i]?.[0] === userId) {
-                rowIndex = i + 1; // 1-বেসড ইনডেক্স
+                rowIndex = i + 1;
                 break;
             }
         }
-
         const now = new Date().toISOString();
         if (rowIndex > 0) {
-            // আপডেট
             await sheets.spreadsheets.values.update({
                 spreadsheetId: SESSION_SHEET_ID,
                 range: `Sheet1!B${rowIndex}:D${rowIndex}`,
@@ -59,7 +55,6 @@ export async function saveSessionToSheet(userId, sessionString) {
                 }
             });
         } else {
-            // নতুন যোগ
             const newRow = [[userId, sessionString, now, now]];
             await sheets.spreadsheets.values.append({
                 spreadsheetId: SESSION_SHEET_ID,
@@ -92,11 +87,11 @@ export async function loginUser(userId, apiId, apiHash) {
     
     await client.start({
         phoneNumber: async () => {
-            console.log('📞 Enter phone number (e.g., +880...):');
+            console.log('📞 Enter phone number:');
             return await input.text('Phone: ');
         },
         password: async () => {
-            console.log('🔑 Enter 2FA password (if any):');
+            console.log('🔑 Enter 2FA password:');
             return await input.text('Password: ');
         },
         phoneCode: async () => {
@@ -112,3 +107,5 @@ export async function loginUser(userId, apiId, apiHash) {
     
     return client;
 }
+
+export { loadSessionFromSheet, saveSessionToSheet };
