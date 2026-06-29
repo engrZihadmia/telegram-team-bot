@@ -169,3 +169,5 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         mentionOverrides
     };
 }
+
+export { loadConfigFromSheet as getConfig };
