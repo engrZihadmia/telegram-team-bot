@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 
-// কনফিগারেশন শীট থেকে ডেটা লোড করা
+// কনফিগারেশন শীট থেকে ডেটা লোড করা (API Key দিয়ে)
 export async function loadConfigFromSheet(sheetId, apiKey) {
     const sheets = google.sheets({ version: 'v4', auth: apiKey });
     
@@ -14,15 +14,16 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         const rows = profileRes.data.values || [];
         for (let i = 1; i < rows.length; i++) { // প্রথম সারি হেডার
             const [name, sales, owner] = rows[i];
-            if (name) {
+            if (name && name.trim()) {
                 profiles[name.trim()] = {
                     sales_member: sales?.trim() || null,
                     owner: owner?.trim() || null
                 };
             }
         }
+        console.log('✅ Profiles loaded:', Object.keys(profiles).length);
     } catch (e) {
-        console.warn('⚠️ Profiles sheet not found:', e.message);
+        console.warn('⚠️ Profiles sheet error:', e.message);
     }
 
     // ২. টিম লোড (Sheet: Teams)
@@ -35,15 +36,16 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         const rows = teamRes.data.values || [];
         for (let i = 1; i < rows.length; i++) {
             const [name, leader, coleader] = rows[i];
-            if (name) {
+            if (name && name.trim()) {
                 teams[name.trim().toLowerCase()] = {
                     leader: leader?.trim() || null,
                     coleader: coleader?.trim() || null
                 };
             }
         }
+        console.log('✅ Teams loaded:', Object.keys(teams).length);
     } catch (e) {
-        console.warn('⚠️ Teams sheet not found:', e.message);
+        console.warn('⚠️ Teams sheet error:', e.message);
     }
 
     // ৩. কমন মেম্বার লোড (Sheet: CommonMembers)
@@ -55,12 +57,14 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         });
         const rows = commonRes.data.values || [];
         for (let i = 1; i < rows.length; i++) {
-            if (rows[i]?.[0]) {
-                commonMembers.push(rows[i][0].trim());
+            const val = rows[i]?.[0];
+            if (val && val.trim()) {
+                commonMembers.push(val.trim());
             }
         }
+        console.log('✅ CommonMembers loaded:', commonMembers.length);
     } catch (e) {
-        console.warn('⚠️ CommonMembers sheet not found:', e.message);
+        console.warn('⚠️ CommonMembers sheet error:', e.message);
     }
 
     // ৪. ফাইভার কীওয়ার্ড লোড (Sheet: FiverrKeywords)
@@ -72,12 +76,14 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         });
         const rows = keywordRes.data.values || [];
         for (let i = 1; i < rows.length; i++) {
-            if (rows[i]?.[0]) {
-                fiverrKeywords.push(rows[i][0].trim().toLowerCase());
+            const val = rows[i]?.[0];
+            if (val && val.trim()) {
+                fiverrKeywords.push(val.trim().toLowerCase());
             }
         }
+        console.log('✅ FiverrKeywords loaded:', fiverrKeywords.length);
     } catch (e) {
-        console.warn('⚠️ FiverrKeywords sheet not found:', e.message);
+        console.warn('⚠️ FiverrKeywords sheet error:', e.message);
     }
 
     // ৫. রিপিট অর্ডার কীওয়ার্ড লোড (Sheet: RepeatKeywords)
@@ -89,12 +95,14 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         });
         const rows = repeatRes.data.values || [];
         for (let i = 1; i < rows.length; i++) {
-            if (rows[i]?.[0]) {
-                repeatKeywords.push(rows[i][0].trim().toLowerCase());
+            const val = rows[i]?.[0];
+            if (val && val.trim()) {
+                repeatKeywords.push(val.trim().toLowerCase());
             }
         }
+        console.log('✅ RepeatKeywords loaded:', repeatKeywords.length);
     } catch (e) {
-        console.warn('⚠️ RepeatKeywords sheet not found:', e.message);
+        console.warn('⚠️ RepeatKeywords sheet error:', e.message);
     }
 
     // ৬. কমান্ড কীওয়ার্ড লোড (Sheet: CommandKeywords)
@@ -107,12 +115,13 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         const rows = cmdRes.data.values || [];
         for (let i = 1; i < rows.length; i++) {
             const [cmd, keyword] = rows[i];
-            if (cmd && keyword) {
+            if (cmd && cmd.trim() && keyword && keyword.trim()) {
                 commandKeywords[cmd.trim()] = keyword.trim();
             }
         }
+        console.log('✅ CommandKeywords loaded:', Object.keys(commandKeywords).length);
     } catch (e) {
-        console.warn('⚠️ CommandKeywords sheet not found:', e.message);
+        console.warn('⚠️ CommandKeywords sheet error:', e.message);
     }
 
     // ৭. অ্যাডমিন আইডি লোড (Sheet: Admins)
@@ -124,12 +133,14 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         });
         const rows = adminRes.data.values || [];
         for (let i = 1; i < rows.length; i++) {
-            if (rows[i]?.[0]) {
-                admins.push(rows[i][0].trim());
+            const val = rows[i]?.[0];
+            if (val && val.trim()) {
+                admins.push(val.trim());
             }
         }
+        console.log('✅ Admins loaded:', admins.length);
     } catch (e) {
-        console.warn('⚠️ Admins sheet not found:', e.message);
+        console.warn('⚠️ Admins sheet error:', e.message);
     }
 
     // ৮. বট ইউজারনেম (Sheet: BotInfo)
@@ -145,18 +156,20 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         for (const row of rows) {
             const key = row[0]?.trim();
             const value = row[1]?.trim();
-            if (key === 'bot_username') botUsername = value;
-            else if (key === 'default_mention_word') defaultMentionWord = value;
+            if (!key) continue;
+            if (key === 'bot_username') botUsername = value || botUsername;
+            else if (key === 'default_mention_word') defaultMentionWord = value || defaultMentionWord;
             else if (key.startsWith('mention_')) {
                 const username = key.replace('mention_', '');
-                mentionOverrides[username] = value;
+                mentionOverrides[username] = value || '';
             }
         }
+        console.log('✅ BotInfo loaded');
     } catch (e) {
-        console.warn('⚠️ BotInfo sheet not found:', e.message);
+        console.warn('⚠️ BotInfo sheet error:', e.message);
     }
 
-    return {
+    const result = {
         profiles,
         teams,
         commonMembers,
@@ -168,6 +181,17 @@ export async function loadConfigFromSheet(sheetId, apiKey) {
         defaultMentionWord,
         mentionOverrides
     };
-}
 
-export { loadConfigFromSheet as getConfig };
+    console.log('✅ Config loaded from sheet:', {
+        profiles: Object.keys(profiles).length,
+        teams: Object.keys(teams).length,
+        commonMembers: commonMembers.length,
+        fiverrKeywords: fiverrKeywords.length,
+        repeatKeywords: repeatKeywords.length,
+        commandKeywords: Object.keys(commandKeywords).length,
+        admins: admins.length,
+        botUsername
+    });
+
+    return result;
+}
